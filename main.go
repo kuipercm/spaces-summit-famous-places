@@ -10,6 +10,7 @@ import (
 	"golang.org/x/oauth2/google"
 	"log"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -46,9 +47,11 @@ func main() {
 	spa := handlers.SpaHandler{StaticPath: "web", IndexPath: "index.html"}
 	baseRouter.PathPrefix("/").Handler(spa)
 
+	port := os.Getenv("PORT")
+
 	srv := &http.Server{
 		Handler:      baseRouter,
-		Addr:         ":5080",
+		Addr:         ":" + port,
 		WriteTimeout: 15 * time.Second,
 		ReadTimeout:  15 * time.Second,
 	}
