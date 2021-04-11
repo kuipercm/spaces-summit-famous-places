@@ -10,6 +10,4 @@ variable "zone" {
   default = "europe-west1a"
 }
 
-variable folder_id {}
-variable billing_account {}
 variable google_credentials {}
