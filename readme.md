@@ -8,11 +8,12 @@
 4. Create the build trigger
 ```
 gcloud beta builds triggers create github \
---name=famous-places-trigger \
---repo-name=spaces-summit-famous-places \
---repo-owner=kuipercm \
---branch-pattern=^master$ \
---build-config=cloudbuild.yaml
+--name="famous-places-trigger" \
+--repo-name="spaces-summit-famous-places" \
+--repo-owner="kuipercm" \
+--branch-pattern="^master$" \
+--build-config="cloudbuild.yaml" \
+--ignored-files="readme.md"
 ```
 5. At this point, there should be a cloud build trigger created which should run and deploy
 the app to Cloud Run.

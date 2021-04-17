@@ -1,12 +1,12 @@
 package storage
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"github.com/kuipercm/spaces-summit-famous-places/pubsub"
 	"google.golang.org/api/iterator"
 	"io"
-	"mime/multipart"
 	"os"
 	"time"
 
@@ -66,7 +66,7 @@ func (s GcpStorage) CreateBucket(t pubsub.TopicDetails) error {
 	return nil
 }
 
-func (s GcpStorage) StoreFile(objectName string, h *multipart.FileHeader) error {
+func (s GcpStorage) StoreFile(objectName string, content []byte) error {
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx)
 	if err != nil {
@@ -74,19 +74,14 @@ func (s GcpStorage) StoreFile(objectName string, h *multipart.FileHeader) error 
 	}
 	defer client.Close()
 
-	// Open local file.
-	f, err := h.Open()
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
 	ctx, cancel := context.WithTimeout(ctx, time.Second*50)
 	defer cancel()
 
+	reader := bytes.NewReader(content)
+
 	// Upload an object with storage.Writer.
 	wc := client.Bucket(s.BucketName).Object(objectName).NewWriter(ctx)
-	if _, err = io.Copy(wc, f); err != nil {
+	if _, err = io.Copy(wc, reader); err != nil {
 		return fmt.Errorf("io.Copy: %v", err)
 	}
 	if err := wc.Close(); err != nil {

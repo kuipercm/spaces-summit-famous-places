@@ -2,7 +2,10 @@ package handlers
 
 import (
 	"github.com/google/uuid"
+	"github.com/kuipercm/spaces-summit-famous-places/firestore"
 	"github.com/kuipercm/spaces-summit-famous-places/storage"
+	"github.com/kuipercm/spaces-summit-famous-places/vision"
+	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -40,8 +43,10 @@ func (h SpaHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 type MultipartUploadHandler struct {
-	Storage storage.GcpStorage
-	MaxSize int64
+	Storage          storage.GcpStorage
+	ImageIdentifier  vision.ImageIdentifier
+	FireStoreBackend firestore.Firestore
+	MaxSize          int64
 }
 
 func (m MultipartUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -58,9 +63,25 @@ func (m MultipartUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 			return
 		}
 
-		//err = m.saveToDisk(h, fileId.String() + filepath.Ext(h.Filename))
+		content, err := m.multipartFileToByteArray(h)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
 		fileName := fileId.String() + filepath.Ext(h.Filename)
-		err = m.Storage.StoreFile(fileName, h)
+		err = m.Storage.StoreFile(fileName, content)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		imageRecord, err := m.ImageIdentifier.FindLandmarks(content, fileName)
+		if err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		m.FireStoreBackend.AddImage(imageRecord)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			return
@@ -70,35 +91,13 @@ func (m MultipartUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	return
 }
 
-func (m MultipartUploadHandler) saveToDisk(h *multipart.FileHeader, fileName string) error {
-	file, err := h.Open()
+func (m MultipartUploadHandler) multipartFileToByteArray(h *multipart.FileHeader) ([]byte, error) {
+	// Open local file.
+	f, err := h.Open()
 	if err != nil {
-		return err
+		return nil, err
 	}
+	defer f.Close()
 
-	outputFile, err := os.Create(fileName)
-	if err != nil {
-		return err
-	}
-	defer outputFile.Close()
-
-	readBytes := make([]byte, 64)
-	_, err = file.Read(readBytes)
-	if err != nil {
-		return err
-	}
-
-	for len(readBytes) > 0 {
-		_, err := outputFile.Write(readBytes)
-		if err != nil {
-			return err
-		}
-
-		_, err = file.Read(readBytes)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return ioutil.ReadAll(f)
 }

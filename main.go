@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"github.com/gorilla/mux"
+	"github.com/kuipercm/spaces-summit-famous-places/firestore"
 	"github.com/kuipercm/spaces-summit-famous-places/handlers"
 	"github.com/kuipercm/spaces-summit-famous-places/pubsub"
 	"github.com/kuipercm/spaces-summit-famous-places/storage"
+	"github.com/kuipercm/spaces-summit-famous-places/vision"
 	"golang.org/x/oauth2/google"
 	"log"
 	"net/http"
@@ -38,9 +40,19 @@ func main() {
 	topicDetails.CreateTopic()
 	gcpStorage.CreateBucket(topicDetails)
 
+	imageIdentifier := vision.ImageIdentifier{
+		ProjectId: gcpCredentials.ProjectID,
+	}
+	imageRecordsFirestoreBackend := firestore.Firestore{
+		ProjectId:      gcpCredentials.ProjectID,
+		CollectionName: "spaces-summit-famous-places",
+	}
+
 	uploadHandler := handlers.MultipartUploadHandler{
-		Storage: gcpStorage,
-		MaxSize: 2 << 20, // 2MB max
+		Storage:          gcpStorage,
+		ImageIdentifier:  imageIdentifier,
+		FireStoreBackend: imageRecordsFirestoreBackend,
+		MaxSize:          2 << 20, // 2MB max
 	}
 	baseRouter.Handle("/api/upload", uploadHandler)
 
