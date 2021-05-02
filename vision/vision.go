@@ -1,15 +1,12 @@
 package vision
 
 import (
-	"bytes"
-	vision "cloud.google.com/go/vision/apiv1"
 	"context"
+	"io"
 	"time"
-)
 
-type ImageIdentifier struct {
-	ProjectId string
-}
+	vision "cloud.google.com/go/vision/apiv1"
+)
 
 type ImageRecord struct {
 	Filename     string
@@ -17,38 +14,43 @@ type ImageRecord struct {
 	CreationDate time.Time
 }
 
-func (i ImageIdentifier) FindLandmarks(imageBytes []byte, fileName string) (*ImageRecord, error) {
-	ctx := context.Background()
+type ImageIdentifier struct {
+	vision *vision.ImageAnnotatorClient
+}
 
+func New(ctx context.Context) (ImageIdentifier, error) {
 	client, err := vision.NewImageAnnotatorClient(ctx)
 	if err != nil {
-		return nil, err
+		return ImageIdentifier{}, err
 	}
 
-	image, err := vision.NewImageFromReader(bytes.NewReader(imageBytes))
+	return ImageIdentifier{
+		vision: client,
+	}, nil
+}
+
+func (i ImageIdentifier) FindLandmarks(ctx context.Context, r io.Reader, fileName string) (ImageRecord, error) {
+	image, err := vision.NewImageFromReader(r)
 	if err != nil {
-		return nil, err
+		return ImageRecord{}, err
 	}
-	annotations, err := client.DetectLandmarks(ctx, image, nil, 10)
+
+	ctx, cancel := context.WithTimeout(ctx, time.Second*10)
+	defer cancel()
+
+	annotations, err := i.vision.DetectLandmarks(ctx, image, nil, 10)
 	if err != nil {
-		return nil, err
+		return ImageRecord{}, err
 	}
 
-	var landmarks []string
-	if len(annotations) == 0 {
-		landmarks = make([]string, 1)
-	} else {
-		landmarks = make([]string, len(annotations))
-		for i, annotation := range annotations {
-			landmarks[i] = annotation.Description
-		}
+	landmarks := make([]string, len(annotations))
+	for i := range annotations {
+		landmarks = append(landmarks, annotations[i].Description)
 	}
 
-	record := ImageRecord{
+	return ImageRecord{
 		Filename:     fileName,
 		Landmarks:    landmarks,
 		CreationDate: time.Now(),
-	}
-
-	return &record, nil
+	}, nil
 }

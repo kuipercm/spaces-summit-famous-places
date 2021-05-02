@@ -1,6 +1,6 @@
 module github.com/kuipercm/spaces-summit-famous-places
 
-go 1.15
+go 1.16
 
 require (
 	cloud.google.com/go v0.75.0
@@ -10,5 +10,5 @@ require (
 	github.com/google/uuid v1.1.2
 	github.com/gorilla/mux v1.8.0
 	golang.org/x/oauth2 v0.0.0-20210218202405-ba52d332ba99
-	google.golang.org/api v0.40.0
+	golang.org/x/tools v0.1.1-0.20210408155258-593413344da1 // indirect
 )

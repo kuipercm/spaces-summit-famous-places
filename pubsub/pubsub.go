@@ -3,44 +3,31 @@ package pubsub
 import (
 	"context"
 	"fmt"
-	"google.golang.org/api/iterator"
-	"os"
 
 	"cloud.google.com/go/pubsub"
 )
 
-type TopicDetails struct {
-	ProjectId string
-	TopicId   string
-}
-
-func (t TopicDetails) CreateTopic() error {
-	ctx := context.Background()
-	client, err := pubsub.NewClient(ctx, t.ProjectId)
+func CreateTopic(ctx context.Context, projectID, topicID string) error {
+	client, err := pubsub.NewClient(ctx, projectID)
 	if err != nil {
-		return fmt.Errorf("pubsub.NewClient: %v", err)
+		return fmt.Errorf("%w: failed to setup pubsub client", err)
 	}
 
-	topics := client.Topics(ctx)
-	for {
-		topic, err := topics.Next()
-		if err == iterator.Done {
-			break
-		}
-		if err != nil {
-			return fmt.Errorf("client.Topics(%q).Next: %v", t.ProjectId, err)
-		}
-		if topic.String() == t.TopicId {
-			fmt.Fprintf(os.Stdout, "Topic %v already exists\n", t.TopicId)
-			return nil
-		}
-	}
-
-	_, err = client.CreateTopic(ctx, t.TopicId)
+	topic := client.TopicInProject(topicID, projectID)
+	exists, err := topic.Exists(ctx)
 	if err != nil {
-		return fmt.Errorf("CreateTopic: %v", err)
+		return fmt.Errorf("%w: failed to check if topic exists", err)
 	}
-	fmt.Fprintf(os.Stdout, "Topic created: %v\n", t)
+	if exists {
+		fmt.Printf("Topic %s already exists\n", topicID)
+		return nil
+	}
 
+	_, err = client.CreateTopic(ctx, topicID)
+	if err != nil {
+		return fmt.Errorf("%w: failed to create topic", err)
+	}
+
+	fmt.Printf("Topic created: %s\n", topicID)
 	return nil
 }
