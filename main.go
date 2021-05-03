@@ -14,6 +14,7 @@ import (
 	"github.com/kuipercm/spaces-summit-famous-places/firestore"
 	"github.com/kuipercm/spaces-summit-famous-places/pubsub"
 	"github.com/kuipercm/spaces-summit-famous-places/vision"
+	"github.com/kuipercm/spaces-summit-famous-places/web"
 	"golang.org/x/oauth2/google"
 )
 
@@ -45,7 +46,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	spa := newSpaHandler("web", "index.html")
+	spa, err := web.NewHandler()
+	if err != nil {
+		log.Fatal(err)
+	}
 	uploadHandler := newUploadHandler(gcpStorage, imageIdentifier, firestore, 2<<20) // 2MB max
 
 	router := mux.NewRouter().StrictSlash(true)
