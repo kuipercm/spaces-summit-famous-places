@@ -7,10 +7,8 @@ import (
 )
 
 // https://golang.org/pkg/embed/
-var (
-	//go:embed static
-	statics embed.FS
-)
+//go:embed static
+var statics embed.FS
 
 func NewHandler() (http.Handler, error) {
 	// Make sure that this filesystem starts at /
