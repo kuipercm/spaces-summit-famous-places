@@ -10,8 +10,6 @@ import (
 var (
 	//go:embed static
 	statics embed.FS
-	//go:embed static/index.html
-	indexHtml []byte
 )
 
 func NewHandler() (http.Handler, error) {
