@@ -43,7 +43,7 @@ func (i ImageIdentifier) FindLandmarks(ctx context.Context, r io.Reader, fileNam
 		return ImageRecord{}, err
 	}
 
-	landmarks := make([]string, len(annotations))
+	landmarks := make([]string, 0, len(annotations))
 	for i := range annotations {
 		landmarks = append(landmarks, annotations[i].Description)
 	}
