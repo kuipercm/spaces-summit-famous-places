@@ -15,18 +15,13 @@ import (
 	"github.com/kuipercm/spaces-summit-famous-places/pubsub"
 	"github.com/kuipercm/spaces-summit-famous-places/vision"
 	"github.com/kuipercm/spaces-summit-famous-places/web"
-	"golang.org/x/oauth2/google"
 )
 
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Interrupt)
 	defer cancel()
 
-	creds, err := google.FindDefaultCredentials(ctx)
-	if err != nil {
-		log.Fatal(err)
-	}
-	projectID := creds.ProjectID
+	projectID := os.Getenv("GCP_PROJECT_ID")
 
 	pubsub.CreateTopic(ctx, projectID, "spaces-summit-famous-places")
 	bucket.Create(ctx, projectID, "spaces-summit-famous-places", "spaces-summit-famous-places")
@@ -53,11 +48,12 @@ func main() {
 	uploadHandler := newUploadHandler(gcpStorage, imageIdentifier, firestore, 2<<20) // 2MB max
 
 	router := mux.NewRouter().StrictSlash(true)
-	router.PathPrefix("/").Handler(spa)
 	router.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Ok!"))
 	})
 	router.Handle("/api/upload", uploadHandler)
+	router.Handle("/", spa)
+
 	port := os.Getenv("PORT")
 	srv := http.Server{
 		Handler:      router,

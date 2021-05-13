@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -36,7 +37,7 @@ func (m multipartUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	}
 
 	ctx := r.Context()
-	for _, h := range r.MultipartForm.File["photo"] {
+	for _, h := range r.MultipartForm.File["photos"] {
 		fileId, err := uuid.NewRandom()
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -51,17 +52,20 @@ func (m multipartUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 		fileName := fileId.String() + filepath.Ext(h.Filename)
 		if err = m.bucket.Put(ctx, fileName, bytes.NewReader(content)); err != nil {
+			fmt.Println(err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		landmarks, err := m.vision.FindLandmarks(ctx, bytes.NewReader(content), fileName)
 		if err != nil {
+			fmt.Println(err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		if err := m.fireStore.Add(ctx, fileName, landmarks); err != nil {
+		if err := m.fireStore.Add(ctx, fileName, &landmarks); err != nil {
+			fmt.Println(err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}

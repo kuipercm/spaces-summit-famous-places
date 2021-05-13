@@ -8,12 +8,12 @@ import (
 )
 
 type Store struct {
-	CollectionName string
-	client         *firestore.Client
+	collection *firestore.CollectionRef
 }
 
 func (f Store) Add(ctx context.Context, filename string, content interface{}) error {
-	_, err := f.client.Collection(f.CollectionName).Doc(filename).Set(ctx, content)
+	_, err := f.collection.Doc(filename).Set(ctx, content)
+	println("Added file..")
 	return err
 }
 
@@ -24,7 +24,6 @@ func New(ctx context.Context, projectID string, collectionName string) (Store, e
 	}
 
 	return Store{
-		CollectionName: collectionName,
-		client:         c,
+		collection: c.Collection(collectionName),
 	}, nil
 }
