@@ -1,29 +1,29 @@
 package firestore
 
 import (
-	"cloud.google.com/go/firestore"
 	"context"
-	"github.com/kuipercm/spaces-summit-famous-places/vision"
-	"log"
+	"fmt"
+
+	"cloud.google.com/go/firestore"
 )
 
-type Firestore struct {
-	ProjectId      string
-	CollectionName string
+type Store struct {
+	collection *firestore.CollectionRef
 }
 
-func (f Firestore) AddImage(record *vision.ImageRecord) error {
-	ctx := context.Background()
-	client := f.createClient(ctx)
-
-	_, err := client.Collection(f.CollectionName).Doc(record.Filename).Set(ctx, record)
+func (f Store) Add(ctx context.Context, filename string, content interface{}) error {
+	_, err := f.collection.Doc(filename).Set(ctx, content)
+	println("Added file..")
 	return err
 }
 
-func (f Firestore) createClient(ctx context.Context) *firestore.Client {
-	client, err := firestore.NewClient(ctx, f.ProjectId)
+func New(ctx context.Context, projectID string, collectionName string) (Store, error) {
+	c, err := firestore.NewClient(ctx, projectID)
 	if err != nil {
-		log.Fatalf("Failed to create client: %v", err)
+		return Store{}, fmt.Errorf("%w: failed to create firestore client", err)
 	}
-	return client
+
+	return Store{
+		collection: c.Collection(collectionName),
+	}, nil
 }
