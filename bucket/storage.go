@@ -60,6 +60,7 @@ func Create(ctx context.Context, projectID, bucketName, topicID string) error {
 	if err := bucket.Create(ctx, projectID, &attrs); err != nil {
 		return fmt.Errorf("%w: failed to create bucket %s", err, bucketName)
 	}
+
 	fmt.Printf("Created bucket %v in %v with storage class %v\n", bucketName, attrs.Location, attrs.StorageClass)
 
 	if _, err := bucket.AddNotification(ctx, &storage.Notification{

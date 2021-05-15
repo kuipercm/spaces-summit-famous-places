@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -37,6 +38,7 @@ func (m multipartUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 	}
 
 	ctx := r.Context()
+	res := make([]vision.ImageRecord, 0, len(r.MultipartForm.File["photos"]))
 	for _, h := range r.MultipartForm.File["photos"] {
 		fileId, err := uuid.NewRandom()
 		if err != nil {
@@ -52,26 +54,28 @@ func (m multipartUploadHandler) ServeHTTP(w http.ResponseWriter, r *http.Request
 
 		fileName := fileId.String() + filepath.Ext(h.Filename)
 		if err = m.bucket.Put(ctx, fileName, bytes.NewReader(content)); err != nil {
-			fmt.Println(err)
+			fmt.Printf("bucket::Put %v\n", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		landmarks, err := m.vision.FindLandmarks(ctx, bytes.NewReader(content), fileName)
 		if err != nil {
-			fmt.Println(err)
+			fmt.Printf("findLandmarks %v\n", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
-		if err := m.fireStore.Add(ctx, fileName, &landmarks); err != nil {
-			fmt.Println(err)
+		if err := m.fireStore.Add(ctx, fileName, landmarks); err != nil {
+			fmt.Printf("firestore::Add %v\n", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
+
+		res = append(res, landmarks)
 	}
 
-	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(res)
 }
 
 func readFileHeader(h *multipart.FileHeader) ([]byte, error) {

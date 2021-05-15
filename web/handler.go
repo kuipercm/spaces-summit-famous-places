@@ -7,7 +7,7 @@ import (
 )
 
 // https://golang.org/pkg/embed/
-//go:embed static
+//go:embed static/*
 var statics embed.FS
 
 func NewHandler() (http.Handler, error) {

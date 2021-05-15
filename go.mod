@@ -27,6 +27,7 @@ require (
 	golang.org/x/oauth2 v0.0.0-20210218202405-ba52d332ba99
 	golang.org/x/sys v0.0.0-20210503173754-0981d6026fa6 // indirect
 	golang.org/x/tools v0.1.1-0.20210408155258-593413344da1 // indirect
+	google.golang.org/api v0.40.0 // indirect
 	gopkg.in/airbrake/gobrake.v2 v2.0.9 // indirect
 	gopkg.in/gemnasium/logrus-airbrake-hook.v2 v2.1.2 // indirect
 )

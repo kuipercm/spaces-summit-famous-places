@@ -52,7 +52,7 @@ func main() {
 		w.Write([]byte("Ok!"))
 	})
 	router.Handle("/api/upload", uploadHandler)
-	router.Handle("/", spa)
+	router.PathPrefix("/").Handler(spa)
 
 	port := os.Getenv("PORT")
 	srv := http.Server{

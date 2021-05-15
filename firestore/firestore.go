@@ -13,7 +13,6 @@ type Store struct {
 
 func (f Store) Add(ctx context.Context, filename string, content interface{}) error {
 	_, err := f.collection.Doc(filename).Set(ctx, content)
-	println("Added file..")
 	return err
 }
 
