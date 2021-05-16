@@ -38,7 +38,7 @@ function handleFiles(files) {
 }
 
 function uploadFile(file) {
-    let url = '/api/upload'
+    let url = '/api/uploads'
     let formData = new FormData()
 
     formData.append('photos', file)
@@ -68,7 +68,7 @@ function previewFile(file, res) {
 
 function createCard(data, landmarks) {
     const card = document.createElement('div')
-    card.classList.add("card")
+    card.classList.add("card", "fade-in")
 
     const img = document.createElement('img')
     img.src = data

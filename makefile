@@ -24,4 +24,4 @@ help:
 
 ## Run the application
 run:
-	PORT=8080 GCP_PROJECT_ID=spaces-summit-famous-places ENV=dev go run *.go
+	PORT=8080 GCP_PROJECT_ID=spaces-summit-famous-places ENV=dev GOOGLE_APPLICATION_CREDENTIALS=sa.json go run *.go

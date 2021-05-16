@@ -46,12 +46,14 @@ func main() {
 		log.Fatal(err)
 	}
 	uploadHandler := newUploadHandler(gcpStorage, imageIdentifier, firestore, 2<<20) // 2MB max
+	fileHandler := newFileHandler(firestore)                                         // 2MB max
 
 	router := mux.NewRouter().StrictSlash(true)
 	router.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Ok!"))
 	})
-	router.Handle("/api/upload", uploadHandler)
+	router.Handle("/api/uploads", uploadHandler).Methods("POST")
+	router.Handle("/api/uploads", fileHandler).Methods("GET")
 	router.PathPrefix("/").Handler(spa)
 
 	port := os.Getenv("PORT")

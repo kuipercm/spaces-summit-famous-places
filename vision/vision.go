@@ -1,7 +1,9 @@
 package vision
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
 	"io"
 	"time"
 
@@ -12,6 +14,7 @@ type ImageRecord struct {
 	Filename     string
 	Landmarks    []string `firestore:",omitempty"`
 	CreationDate time.Time
+	Image        string
 }
 
 type ImageIdentifier struct {
@@ -30,7 +33,10 @@ func New(ctx context.Context) (ImageIdentifier, error) {
 }
 
 func (i ImageIdentifier) FindLandmarks(ctx context.Context, r io.Reader, fileName string) (ImageRecord, error) {
-	image, err := vision.NewImageFromReader(r)
+	var buf bytes.Buffer
+	tee := io.TeeReader(r, &buf)
+
+	image, err := vision.NewImageFromReader(tee)
 	if err != nil {
 		return ImageRecord{}, err
 	}
@@ -48,9 +54,15 @@ func (i ImageIdentifier) FindLandmarks(ctx context.Context, r io.Reader, fileNam
 		landmarks = append(landmarks, annotations[i].Description)
 	}
 
+	b, err := io.ReadAll(&buf)
+	if err != nil {
+		return ImageRecord{}, err
+	}
+
 	return ImageRecord{
 		Filename:     fileName,
 		Landmarks:    landmarks,
 		CreationDate: time.Now(),
+		Image:        "data:image/png;base64," + base64.StdEncoding.EncodeToString(b),
 	}, nil
 }
