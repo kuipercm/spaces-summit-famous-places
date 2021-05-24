@@ -28,8 +28,9 @@ func newFileHandler(f firestore.Store) fileHandler {
 }
 
 func (m fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctx, span := m.tracer.Start(r.Context(), "http/filehandler")
+	ctx, span := m.tracer.Start(r.Context(), "http/list")
 	defer span.End()
+
 	qLastCreationDate := r.URL.Query().Get("creationDate")
 	if qLastCreationDate != "" {
 		m.byLastCreationDate(ctx, w, r, qLastCreationDate)
