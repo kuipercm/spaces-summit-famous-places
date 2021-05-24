@@ -18,7 +18,8 @@ gcloud beta builds triggers create github \
 5. At this point, there should be a cloud build trigger created which should run and deploy
 the app to Cloud Run.
 6. The app itself creates a bucket and a topic (currently) to store uploaded files.
-7. To see your services use `gcloud run services list`, you will also find the url here! To test the app, perform the following command:
+7. To see your services use `gcloud run services list`, you will also find the url here!
+8. To test the app, perform the following command:
 ```
 curl --location --request PUT 'https://famous-places-3guutasc6a-ez.a.run.app/api/upload' \
 --header 'Content-Type: multipart/form-data' \

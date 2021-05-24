@@ -34,7 +34,14 @@ function handleDrop(e) {
 
 function handleFiles(files) {
     files = [...files]
+    files.forEach(shouldNotExceedFirestoreFieldSizeLimit)
     files.forEach(uploadFile)
+}
+
+function shouldNotExceedFirestoreFieldSizeLimit(file) {
+    if (file.size > 900000) { // check max firestore field size limit: 1048487 minus prefix 'data:image/png;base64,'
+        alert('Uploaded image size for image ' + file.name + ' is too large: should not exceed 900 KB');
+    }
 }
 
 function uploadFile(file) {

@@ -18,7 +18,7 @@ function refresh() {
 
 function previewFile(res) {
     let place = "Unknown"
-    if (res.Landmarks != undefined) {
+    if (res.Landmarks !== undefined) {
         place = res.Landmarks[0]
     }
 
@@ -32,7 +32,7 @@ function previewFile(res) {
 
 function containsFile(filename) {
     for (i = 0; i < cards.length; i++) {
-        if (cards[i] == filename) {
+        if (cards[i] === filename) {
             return true
         }
     }
