@@ -1,12 +1,25 @@
 const gallery = document.getElementById('gallery')
 let cards = []
+let creationDates = []
 
-refresh()
-setInterval(refresh, 5000)
+refresh2()
+setInterval(refresh2, 5000)
 
 
 function refresh() {
     fetch("/api/uploads?limit=10&offset=0", {
+            method: 'GET',
+        })
+        .then((res) => res.json())
+        .then((json) => json.forEach((res) => {
+            previewFile(res)
+        }))
+        .catch((e) => { alert(e) })
+}
+
+function refresh2() {
+    let lastCreationDate = creationDates.sort().reverse()[0] || '1970-01-01T00:00:00.000Z'
+    fetch("/api/uploads?creationDate=" + lastCreationDate, {
             method: 'GET',
         })
         .then((res) => res.json())
@@ -26,6 +39,7 @@ function previewFile(res) {
     if (!containsFile(res.Filename)) {
         document.getElementById('gallery').appendChild(img)
         cards.push(res.Filename)
+        creationDates.push(res.CreationDate)
     }
 }
 
