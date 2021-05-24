@@ -19,7 +19,8 @@ function refresh() {
 
 function refresh2() {
     let lastCreationDate = creationDates.sort().reverse()[0] || '1970-01-01T00:00:00.000Z'
-    fetch("/api/uploads?creationDate=" + lastCreationDate, {
+    let qLastCreationDate = Date.parse(lastCreationDate)
+    fetch("/api/uploads?creationDate=" + qLastCreationDate, {
             method: 'GET',
         })
         .then((res) => res.json())

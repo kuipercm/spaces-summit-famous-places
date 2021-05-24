@@ -60,14 +60,14 @@ func (m fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m fileHandler) byLastCreationDate(w http.ResponseWriter, r *http.Request, qLastCreationDate string) {
-	layout := "2006-01-02T15:04:05.000Z"
-	lastCreationDate, err := time.Parse(layout, qLastCreationDate)
+	lastCreationDateMillis, err := strconv.ParseInt(qLastCreationDate, 10, 64)
 	if err != nil {
-		fmt.Printf("parse qLastCreationDate string to date %v", err)
+		fmt.Printf("parse qLastCreationDate string to int %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
+	lastCreationDate := time.Unix(0, lastCreationDateMillis*int64(time.Millisecond))
 	res, err := m.fireStore.ListByCreationDate(r.Context(), lastCreationDate)
 	if err != nil {
 		fmt.Printf("firestore::ListByCreationDate %v", err)
