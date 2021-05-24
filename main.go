@@ -15,6 +15,10 @@ import (
 	"github.com/kuipercm/spaces-summit-famous-places/pubsub"
 	"github.com/kuipercm/spaces-summit-famous-places/vision"
 	"github.com/kuipercm/spaces-summit-famous-places/web"
+	"go.opentelemetry.io/otel"
+
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 func main() {
@@ -25,6 +29,17 @@ func main() {
 
 	pubsub.CreateTopic(ctx, projectID, "spaces-summit-famous-places")
 	bucket.Create(ctx, projectID, "spaces-summit-famous-places", "spaces-summit-famous-places")
+
+	exporter, err := trace.NewExporter(trace.WithProjectID(projectID))
+	if err != nil {
+		log.Fatalf("trace::NewExporter: %v", err)
+	}
+	defer exporter.Shutdown(ctx) // flushes any pending spans
+
+	// WithBatcher to batch trace exports
+	// WithTraces == export trace after it's collected i.e. add 500ms latency per request..
+	tp := sdktrace.NewTracerProvider(sdktrace.WithBatcher(exporter))
+	otel.SetTracerProvider(tp)
 
 	gcpStorage, err := bucket.New(ctx, projectID, "spaces-summit-famous-places")
 	if err != nil {

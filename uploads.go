@@ -1,34 +1,43 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/kuipercm/spaces-summit-famous-places/firestore"
 	"net/http"
 	"strconv"
 	"time"
+
+	"github.com/kuipercm/spaces-summit-famous-places/firestore"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type fileHandler struct {
 	fireStore firestore.Store
+	tracer    trace.Tracer
 }
 
 func newFileHandler(f firestore.Store) fileHandler {
+	t := otel.Tracer("ssfp/uploads")
+
 	return fileHandler{
 		fireStore: f,
+		tracer:    t,
 	}
 }
 
 func (m fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	qLimit := r.URL.Query().Get("limit")
-	qOffset := r.URL.Query().Get("offset")
+	ctx, span := m.tracer.Start(r.Context(), "http/filehandler")
+	defer span.End()
 	qLastCreationDate := r.URL.Query().Get("creationDate")
-
 	if qLastCreationDate != "" {
-		m.byLastCreationDate(w, r, qLastCreationDate)
+		m.byLastCreationDate(ctx, w, r, qLastCreationDate)
 		return
 	}
 
+	qLimit := r.URL.Query().Get("limit")
+	qOffset := r.URL.Query().Get("offset")
 	if qLimit == "" || qOffset == "" {
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte("If not specifing by creationDate, you should specify both limit and offset. offset = " + qOffset + ", qLimit = " + qLimit))
@@ -49,7 +58,9 @@ func (m fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := m.fireStore.List(r.Context(), limit, offset)
+	fsCtx, fsSpan := m.tracer.Start(ctx, "firestore/list")
+	res, err := m.fireStore.List(fsCtx, limit, offset)
+	fsSpan.End()
 	if err != nil {
 		fmt.Printf("firestore::list %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -59,7 +70,10 @@ func (m fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-func (m fileHandler) byLastCreationDate(w http.ResponseWriter, r *http.Request, qLastCreationDate string) {
+func (m fileHandler) byLastCreationDate(ctx context.Context, w http.ResponseWriter, r *http.Request, qLastCreationDate string) {
+	ctx, span := m.tracer.Start(ctx, "firestore/list/ByCreationDate")
+	defer span.End()
+
 	lastCreationDateMillis, err := strconv.ParseInt(qLastCreationDate, 10, 64)
 	if err != nil {
 		fmt.Printf("parse qLastCreationDate string to int %v", err)
@@ -68,7 +82,7 @@ func (m fileHandler) byLastCreationDate(w http.ResponseWriter, r *http.Request, 
 	}
 
 	lastCreationDate := time.Unix(0, lastCreationDateMillis*int64(time.Millisecond))
-	res, err := m.fireStore.ListByCreationDate(r.Context(), lastCreationDate)
+	res, err := m.fireStore.ListByCreationDate(ctx, lastCreationDate)
 	if err != nil {
 		fmt.Printf("firestore::ListByCreationDate %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
