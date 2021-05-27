@@ -26,7 +26,7 @@ func (m fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	qLastCreationDate := r.URL.Query().Get("creationDate")
 	if qLastCreationDate != "" {
-		m.byLastCreationDate(ctx, w, qLastCreationDate)
+		m.byLastCreationDate(ctx, w, r, qLastCreationDate)
 		return
 	}
 
@@ -62,7 +62,7 @@ func (m fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(res)
 }
 
-func (m fileHandler) byLastCreationDate(ctx context.Context, w http.ResponseWriter, qLastCreationDate string) {
+func (m fileHandler) byLastCreationDate(ctx context.Context, w http.ResponseWriter, r *http.Request, qLastCreationDate string) {
 	lastCreationDateMillis, err := strconv.ParseInt(qLastCreationDate, 10, 64)
 	if err != nil {
 		fmt.Printf("parse qLastCreationDate string to int %v", err)
