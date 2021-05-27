@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"golang.org/x/oauth2/google"
 	"log"
 	"net/http"
 	"os"
@@ -21,12 +22,19 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Interrupt)
 	defer cancel()
 
-	projectID := os.Getenv("GCP_PROJECT_ID")
+	defaultResourceName := "spaces-summit-famous-places"
 
-	pubsub.CreateTopic(ctx, projectID, "spaces-summit-famous-places")
-	bucket.Create(ctx, projectID, "spaces-summit-famous-places", "spaces-summit-famous-places")
+	gcpCredentials, err := google.FindDefaultCredentials(ctx)
+	if err != nil {
+		log.Fatalf("google::FindDefaultCredentials: %v", err)
+	}
 
-	gcpStorage, err := bucket.New(ctx, projectID, "spaces-summit-famous-places")
+	projectID := gcpCredentials.ProjectID //os.Getenv("GCP_PROJECT_ID")
+
+	pubsub.CreateTopic(ctx, projectID, defaultResourceName)
+	bucket.Create(ctx, projectID, defaultResourceName, defaultResourceName)
+
+	gcpStorage, err := bucket.New(ctx, projectID, defaultResourceName)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -36,7 +44,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	firestore, err := firestore.New(ctx, projectID, "spaces-summit-famous-places")
+	firestore, err := firestore.New(ctx, projectID, defaultResourceName)
 	if err != nil {
 		log.Fatal(err)
 	}
