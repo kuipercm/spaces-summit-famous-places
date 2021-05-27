@@ -76,7 +76,7 @@ func main() {
 	})
 
 	router.Handle("/api/uploads", otelhttp.NewHandler(uploadHandler, "api/uploads")).Methods("POST")
-	router.Handle("/api/uploads", otelhttp.NewHandler(filehandler, "api/uploads")).Methods("GET")
+	router.Handle("/api/uploads", otelhttp.NewHandler(fileHandler, "api/uploads")).Methods("GET")
 	router.PathPrefix("/").Handler(spa)
 
 	port := os.Getenv("PORT")
