@@ -9,20 +9,27 @@ import (
 	"time"
 
 	"github.com/kuipercm/spaces-summit-famous-places/firestore"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type fileHandler struct {
 	fireStore firestore.Store
+	tracer    trace.Tracer
 }
 
 func newFileHandler(f firestore.Store) fileHandler {
+	t := otel.Tracer("ssfp/uploads")
+
 	return fileHandler{
 		fireStore: f,
+		tracer:    t,
 	}
 }
 
 func (m fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
+	ctx, span := m.tracer.Start(r.Context(), "http/list")
+	defer span.End()
 
 	qLastCreationDate := r.URL.Query().Get("creationDate")
 	if qLastCreationDate != "" {
@@ -52,7 +59,10 @@ func (m fileHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := m.fireStore.List(ctx, limit, offset)
+	fsCtx, fsSpan := m.tracer.Start(ctx, "firestore/list")
+	res, err := m.fireStore.List(fsCtx, limit, offset)
+	fsSpan.End()
+
 	if err != nil {
 		fmt.Printf("firestore::list %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -71,7 +81,11 @@ func (m fileHandler) byLastCreationDate(ctx context.Context, w http.ResponseWrit
 	}
 
 	lastCreationDate := time.Unix(0, lastCreationDateMillis*int64(time.Millisecond))
+
+	ctx, span := m.tracer.Start(ctx, "firestore/list/ByCreationDate")
 	res, err := m.fireStore.ListByCreationDate(ctx, lastCreationDate)
+	defer span.End()
+
 	if err != nil {
 		fmt.Printf("firestore::ListByCreationDate %v", err)
 		w.WriteHeader(http.StatusInternalServerError)

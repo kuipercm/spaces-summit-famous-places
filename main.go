@@ -3,19 +3,24 @@ package main
 import (
 	"context"
 	"fmt"
-	"golang.org/x/oauth2/google"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/otel"
+	"golang.org/x/oauth2/google"
+
+	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace"
 	"github.com/gorilla/mux"
 	"github.com/kuipercm/spaces-summit-famous-places/bucket"
 	"github.com/kuipercm/spaces-summit-famous-places/firestore"
 	"github.com/kuipercm/spaces-summit-famous-places/pubsub"
 	"github.com/kuipercm/spaces-summit-famous-places/vision"
 	"github.com/kuipercm/spaces-summit-famous-places/web"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 func main() {
@@ -28,6 +33,17 @@ func main() {
 	}
 
 	projectID := gcpCredentials.ProjectID //os.Getenv("GCP_PROJECT_ID")
+
+	exporter, err := trace.NewExporter(trace.WithProjectID(projectID))
+	if err != nil {
+		log.Fatalf("trace::NewExporter: %v", err)
+	}
+	defer exporter.Shutdown(ctx) // flushes any pending spans
+
+	// WithBatcher to batch trace exports
+	// WithTraces == export trace after it's collected i.e. add 500ms latency per request..
+	tp := sdktrace.NewTracerProvider(sdktrace.WithBatcher(exporter))
+	otel.SetTracerProvider(tp)
 
 	pubsub.CreateTopic(ctx, projectID, "spaces-summit-famous-places")
 	bucket.Create(ctx, projectID, "spaces-summit-famous-places", "spaces-summit-famous-places")
@@ -58,8 +74,9 @@ func main() {
 	router.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Ok!"))
 	})
-	router.Handle("/api/uploads", uploadHandler).Methods("POST")
-	router.Handle("/api/uploads", fileHandler).Methods("GET")
+
+	router.Handle("/api/uploads", otelhttp.NewHandler(uploadHandler, "api/uploads")).Methods("POST")
+	router.Handle("/api/uploads", otelhttp.NewHandler(filehandler, "api/uploads")).Methods("GET")
 	router.PathPrefix("/").Handler(spa)
 
 	port := os.Getenv("PORT")
